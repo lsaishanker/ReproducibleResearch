@@ -1,0 +1,78 @@
+---
+title: "ReproducibleResearch-Project1"
+author: "Sai"
+date: "September 28, 2016"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+library(ggplot2)
+knitr::opts_chunk$set(echo = TRUE)
+monitoringData<-read.csv(file="activity.csv",col.names = c("steps","date","interval"),na.strings = NA)
+monitoringData[,2]<-as.data.frame(strptime(monitoringData[,2],format = "%Y-%m-%d"))
+aggregateStepsByDay<-aggregate(steps ~ date, monitoringData, sum)
+aggregateStepsByDayAndInterval<-aggregate(steps ~  interval, monitoringData, mean)
+```
+
+```{r}
+
+ hist(aggregateStepsByDay$steps,
+        xlab = "Steps",
+        col="red",
+        main = "Steps per day"
+   )
+
+meanSteps<-mean(aggregateStepsByDay$steps)
+medianSteps<-median(aggregateStepsByDay$steps)
+print(paste("Mean of Steps per day:",meanSteps))
+print(paste("Median of Steps per day:",medianSteps))
+
+
+plot( aggregateStepsByDayAndInterval$interval,
+         aggregateStepsByDayAndInterval$steps,
+          ylab = "Steps",
+          type = "l",
+          xlab="Interval",
+          main = "Average Daily Activity Pattern",
+         col="darkred"
+    )
+
+aggregateStepsByDayAndInterval[which.max(aggregateStepsByDayAndInterval$steps),]
+
+nrow(monitoringData[is.na(monitoringData$steps),])
+
+monitoringDataNoNAs<-monitoringData
+monitoringDataNoNAs[is.na(monitoringDataNoNAs)]<-0
+
+nrow(monitoringDataNoNAs[is.na(monitoringDataNoNAs$steps),])
+
+noNAaggregageStepsByDay<-aggregate(steps ~ date, monitoringDataNoNAs, sum)
+
+ hist(noNAaggregageStepsByDay$steps,
+        xlab = "Steps",
+        col="blue",
+        main = "Steps per day no NA's"
+   )
+noNAmeanSteps<-mean(noNAaggregageStepsByDay$steps)
+noNAmedianSteps<-median(noNAaggregageStepsByDay$steps)
+print(paste("Mean of Steps per day:",noNAmeanSteps))
+print(paste("Median of Steps per day:",noNAmedianSteps))
+
+#yes there is a difference after imputing the dataset.
+
+Weektype<-as.factor(ifelse(weekdays(monitoringDataNoNAs$date)=="Saturday" | weekdays(monitoringDataNoNAs$date)=="Sunday","Weekend","Weekday"))
+
+names(Weektype)<-"Weektype"
+
+newNoNaDataSet<-cbind(monitoringDataNoNAs,Weektype)
+
+stepsByDayType<-aggregate(steps ~ interval + Weektype, newNoNaDataSet, mean)
+
+ g<-ggplot(stepsByDayType, aes(interval,steps, color = Weektype)) +
+        geom_path() +  
+        facet_grid(. ~ Weektype ) +
+        labs(x="Interval", y="Steps", title="Avgerage Daily Steps by Weektype")
+   
+    print(g)
+
+```
